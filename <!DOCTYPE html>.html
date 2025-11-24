@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Calendrier de l'Avent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #0b1c2c, #143d4f);
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 100%;
+      background: rgba(0,0,0,0.25);
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 0.25rem;
+      font-size: 2rem;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.95rem;
+      opacity: 0.85;
+      margin-bottom: 2rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 700px) {
+      .grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 480px) {
+      .grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    .day {
+      position: relative;
+      border: none;
+      border-radius: 14px;
+      padding: 1rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      background: rgba(0, 0, 0, 0.1);
+      color: #ffffff;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .day span.number {
+      font-size: 1.4rem;
+    }
+
+    .day.unlocked {
+      background: linear-gradient(135deg, #f4a261, #e76f51);
+    }
+
+    .day.unlocked:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 25px rgba(0,0,0,0.35);
+    }
+
+    .day.locked {
+      background: rgba(255,255,255,0.08);
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .day.locked::after {
+      content: "🔒";
+      position: absolute;
+      right: 0.5rem;
+      bottom: 0.5rem;
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .day.past {
+      background: linear-gradient(135deg, #2a9d8f, #264653);
+    }
+
+    .today-label {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      font-size: 0.7rem;
+      padding: 0.05rem 0.35rem;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.2);
+      text-transform: uppercase;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal {
+      background: #0c1924;
+      border-radius: 20px;
+      padding: 1.5rem;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      border: none;
+      background: transparent;
+      color: #fff;
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+
+    .modal img {
+      max-width: 100%;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .modal h2 {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal p {
+      margin: 0;
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+
+    .info {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 1rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Calendrier de l'Avent</h1>
+    <div class="subtitle">
+      Que ce cache sous la jupe de la case aujourd'hui ? 🎁
+    </div>
+
+    <div id="calendar" class="grid"></div>
+
+    <div class="info">
+      Les cases futures sont verrouillées jusqu'à leur date.  
+      (Basé sur la date de ton appareil.)
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal-backdrop" class="modal-backdrop">
+    <div class="modal">
+      <button class="modal-close" aria-label="Fermer">&times;</button>
+      <h2 id="modal-title"></h2>
+      <img id="modal-image" src="" alt="" />
+      <p id="modal-text"></p>
+    </div>
+  </div>
+
+  <script>
+    // 🧩 1. CONTENU DU CALENDRIER
+    // Tu remplis ici image + texte pour chaque jour (1 à 24).
+    // Pour l'image, mets soit un lien absolu (https://...) soit un fichier du même dossier (ex: "images/jour1.png").
+    const contentByDay = {
+      1: {
+        title: "Jour 1",
+        image: "images/P1090904.JPG",
+        text: ""
+      },
+      2: {
+        title: "Jour 2",
+        image: "https://via.placeholder.com/500x300?text=Jour+2",
+        text: "Petit mot doux pour le jour 2 💌"
+      },
+      3: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      4: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      5: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      6: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      7: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      8: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      9: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      10: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      11: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      12: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      13: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      14: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      15: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      16: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      17: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      18: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      19: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      20: {
+        title: "sJour 1",
+        image: "",
+        text: ""
+      },
+      21: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      22: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+      23: {
+        title: "Jour 1",
+        image: "",
+        text: ""
+      },
+
+      24: {
+        title: "Jour 24",
+        image: "https://via.placeholder.com/500x300?text=Jour+24",
+        text: "La grande surprise de Noël 🎄"
+      }
+    };
+
+    // 🧩 2. PARAMÈTRES DU CALENDRIER
+    // Mois = décembre (11 car JS compte les mois de 0 à 11)
+    const START_DAY = 1;   // 1er décembre
+    const END_DAY = 24;    // 24 décembre
+    const MONTH = 10;      // Décembre
+    // Si tu veux limiter à une année précise, tu peux fixer year = 2025 par ex.
+    // Ici on prend l'année actuelle.
+    const today = new Date();
+    const year = today.getFullYear();
+
+    // Calcul du "numéro de jour" que l'on autorise
+    let currentDay = 0;
+    if (today.getMonth() === MONTH) {
+      currentDay = today.getDate();
+      if (currentDay < START_DAY) {
+        currentDay = 0; // avant le 1er décembre -> rien d'ouvert
+      } else if (currentDay > END_DAY) {
+        currentDay = END_DAY; // après le 24 -> tout est ouvert
+      }
+    } else if (today.getMonth() > MONTH) {
+      currentDay = END_DAY; // après décembre -> tout ouvert
+    } else {
+      currentDay = 0; // avant décembre
+    }
+
+    // 🧩 3. GÉNÉRATION DES CASES
+    const calendarEl = document.getElementById("calendar");
+
+    function openDay(day) {
+      const data = contentByDay[day] || {
+        title: "Jour " + day,
+        image: "",
+        text: "Pas de contenu défini encore."
+      };
+
+      const modalBackdrop = document.getElementById("modal-backdrop");
+      const modalTitle = document.getElementById("modal-title");
+      const modalImage = document.getElementById("modal-image");
+      const modalText = document.getElementById("modal-text");
+
+      modalTitle.textContent = data.title || `Jour ${day}`;
+      modalText.textContent = data.text || "";
+      if (data.image) {
+        modalImage.style.display = "block";
+        modalImage.src = data.image;
+        modalImage.alt = data.title || `Jour ${day}`;
+      } else {
+        modalImage.style.display = "none";
+      }
+
+      modalBackdrop.classList.add("active");
+    }
+
+    function buildCalendar() {
+      for (let day = START_DAY; day <= END_DAY; day++) {
+        const btn = document.createElement("button");
+        btn.classList.add("day");
+
+        const numberSpan = document.createElement("span");
+        numberSpan.classList.add("number");
+        numberSpan.textContent = day;
+        btn.appendChild(numberSpan);
+
+        if (currentDay === 0 || day > currentDay) {
+          // Case future → verrouillée
+          btn.classList.add("locked");
+        } else {
+          // Case passée ou aujourd'hui
+          btn.classList.add(day === currentDay ? "unlocked" : "past");
+
+          if (day === currentDay) {
+            const label = document.createElement("div");
+            label.classList.add("today-label");
+            label.textContent = "Aujourd'hui";
+            btn.appendChild(label);
+          }
+
+          btn.addEventListener("click", () => openDay(day));
+        }
+
+        calendarEl.appendChild(btn);
+      }
+    }
+
+    buildCalendar();
+
+    // 🧩 4. GESTION DU MODAL
+    const modalBackdrop = document.getElementById("modal-backdrop");
+    const closeBtn = document.querySelector(".modal-close");
+
+    closeBtn.addEventListener("click", () => {
+      modalBackdrop.classList.remove("active");
+    });
+
+    modalBackdrop.addEventListener("click", (e) => {
+      if (e.target === modalBackdrop) {
+        modalBackdrop.classList.remove("active");
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        modalBackdrop.classList.remove("active");
+      }
+    });
+  </script>
+</body>
+</html>
