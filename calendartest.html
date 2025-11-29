@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Calendrier de l'Avent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      /* Fond rouge + texture de neige */
+      background: #8b0000 url("https://pngimg.com/uploads/snow/snow_PNG25484.png");
+      background-size: cover;
+      background-attachment: fixed;
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 100%;
+      background: rgba(0,0,0,0.25);
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
+      position: relative;
+      z-index: 1;
+    }
+
+    h1 {
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 0.25rem;
+      font-size: 2rem;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.95rem;
+      opacity: 0.85;
+      margin-bottom: 2rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 700px) {
+      .grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 480px) {
+      .grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    /* Petites maisons de Noël */
+    .day {
+      position: relative;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(135deg, #b91c1c, #7f1d1d); /* rouge maison */
+      color: #fff;
+      border-radius: 14px;
+      padding: 1.4rem 0.4rem 0.7rem; /* espace pour le toit */
+      font-size: 1.1rem;
+      font-weight: 700;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+      transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        background 0.15s ease;
+      overflow: visible;
+    }
+
+    /* Toit de la maison */
+    .day::before {
+      content: "";
+      position: absolute;
+      top: -0.9rem;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 1.2rem solid transparent;
+      border-right: 1.2rem solid transparent;
+      border-bottom: 1.1rem solid #b91c1c; /* même rouge */
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));
+    }
+
+    /* Couronne de Noël sur la maison */
+    .day::after {
+      content: "";
+      position: absolute;
+      top: 0.15rem;
+      left: 0.5rem;
+      width: 0.7rem;
+      height: 0.7rem;
+      border-radius: 999px;
+      border: 2px solid #14532d;
+      background:
+        radial-gradient(circle at 30% 30%, #22c55e 0, #16a34a 45%, transparent 60%),
+        radial-gradient(circle at 70% 70%, #84cc16 0, #4d7c0f 45%, transparent 60%);
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .day span.number {
+      font-size: 1.3rem;
+      display: block;
+      text-align: center;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+    }
+
+    /* Jour du jour : plus lumineux / doré */
+    .day.unlocked {
+      background: linear-gradient(135deg, #f97316, #b91c1c);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+    }
+
+    .day.unlocked::before {
+      border-bottom-color: #f97316;
+    }
+
+    .day.unlocked:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 35px rgba(0, 0, 0, 0.55);
+    }
+
+    /* Jours passés : rouge + touche de vert */
+    .day.past {
+      background: linear-gradient(135deg, #7f1d1d, #14532d);
+      opacity: 0.95;
+    }
+
+    .day.past::before {
+      border-bottom-color: #7f1d1d;
+    }
+
+    /* Jours futurs verrouillés */
+    .day.locked {
+      background: radial-gradient(circle at top, rgba(255,255,255,0.12), rgba(127,29,29,0.9));
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .day.locked::before {
+      border-bottom-color: rgba(127,29,29,0.9);
+    }
+
+    /* Sur les jours verrouillés, on remplace la couronne par le cadenas */
+    .day.locked::after {
+      content: "🔒";
+      width: auto;
+      height: auto;
+      border: none;
+      background: none;
+      box-shadow: none;
+      position: absolute;
+      right: 0.35rem;
+      bottom: 0.25rem;
+      font-size: 1rem;
+      opacity: 0.95;
+    }
+
+    .today-label {
+      position: absolute;
+      top: 0.25rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.65rem;
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.18);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      backdrop-filter: blur(4px);
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal {
+      background: #0c1924;
+      border-radius: 20px;
+      padding: 1.5rem;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      border: none;
+      background: transparent;
+      color: #fff;
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+
+    .modal img {
+      max-width: 100%;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .modal h2 {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal p {
+      margin: 0;
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+
+    .info {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 1rem;
+      text-align: center;
+    }
+
+    /* Neige animée variée */
+    @keyframes snowfall {
+      0% {
+        transform: translateY(-100px) translateX(0);
+        opacity: 0;
+      }
+      10% {
+        opacity: 0.9;
+      }
+      100% {
+        transform: translateY(100vh) translateX(40px);
+        opacity: 0;
+      }
+    }
+
+    .snowflake {
+      position: fixed;
+      top: -10px;
+      color: #fff;
+      font-size: 0.8rem;
+      opacity: 0.8;
+      animation: snowfall linear infinite;
+      pointer-events: none;
+      z-index: 1000;
+      text-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+    }
+
+    /* Guirlande en haut */
+    .guirlande {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 90px;
+      background: url("https://pngimg.com/uploads/christmas_garland/christmas_garland_PNG45.png") center no-repeat;
+      background-size: contain;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* Guirlande lumineuse : halo de lumière */
+    @keyframes guirlandeGlow {
+      0% {
+        opacity: 0.4;
+      }
+      50% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0.4;
+      }
+    }
+
+    .guirlande::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 10% 80%, rgba(255, 255, 255, 0.8) 0, transparent 55%),
+        radial-gradient(circle at 30% 80%, rgba(255, 215, 0, 0.9) 0, transparent 55%),
+        radial-gradient(circle at 50% 80%, rgba(255, 99, 71, 0.9) 0, transparent 55%),
+        radial-gradient(circle at 70% 80%, rgba(144, 238, 144, 0.9) 0, transparent 55%),
+        radial-gradient(circle at 90% 80%, rgba(135, 206, 250, 0.9) 0, transparent 55%);
+      mix-blend-mode: screen;
+      animation: guirlandeGlow 2.2s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Guirlande + son de clochettes -->
+  <div class="guirlande"></div>
+  <audio id="bell-sound" src="sons/cloche.mp3" preload="auto"></audio>
+
+  <div class="container">
+    <h1>Calendrier de l'Avent</h1>
+    <div class="subtitle">
+      Que ce cache sous la jupe de la case aujourd'hui ? 🎁
+    </div>
+
+    <div id="calendar" class="grid"></div>
+
+    <div class="info">
+      Les cases futures sont verrouillées jusqu'à leur date.<br />
+      (Basé sur la date de ton appareil.)
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal-backdrop" class="modal-backdrop">
+    <div class="modal">
+      <button class="modal-close" aria-label="Fermer">&times;</button>
+      <h2 id="modal-title"></h2>
+      <img id="modal-image" src="" alt="" />
+      <p id="modal-text"></p>
+    </div>
+  </div>
+
+  <script>
+    // 🧩 1. CONTENU DU CALENDRIER
+    // Tu remplis ici image + texte pour chaque jour (1 à 24).
+    const contentByDay = {
+      1: {
+        title: "C'est le Jour 1, celui qu'on RETIENNNNN",
+        image: "images/8DAE8721-CF10-4D7A-8365-6C229D319081_4_5005_c.jpeg",
+        text: "Voici le jour 1, le jour 1 c'est le début c'est le commencement de l'hisoire. mais comme c'est un calendrier de l'avant il faut commencer par une bonne bouffée d'eau fraiche !! Donc te voila entrain de boire l'eau du laysonnai dans une belle position de grenouille. Je t'aime fort appel moi mon amour : 0625782543"
+      },
+      2: {
+        title: "Jour 2 comme 2 gourdasses qui rigolent",
+        image: "images/7C22BDC5-6DD0-4F0C-9E75-D98D8452EB00_1_105_c.jpeg",
+        text: "Voila c'est le momet c'est plus le jour 1 mais on retourne directement en Malaisie, là où je t'ai connu, ou je t'ai remarqué pour la première fois, là où je me suis dis Faut qu'on soit dans le m^me bus !!! Mais cette photo c'est toi et Alix, vous heureuse comme tout. Gros bisous de la part de ton amoureux 💌"
+      },
+      3: {
+        title: "A 3 IL FAIT FROID",
+        image: "images/6287C961-3B6D-4DB7-83C2-5A56D1840B2E_4_5005_c.jpeg",
+        text: "Voila nous sommes a BALI tous ensemble on va ensuite aller chacun de notre coté visiter l'indonésie, Tu es la dragon de komodo de mon coeur, (j'aodre ces betes j'ai fais un exposé dessus en CM1) mais t'es bien plus belle qu'eux"
+      },
+      4: {
+        title: "4 comme club des 4",
+        image: "images/2F974151-E06F-45D1-85D1-EB41189CAF80_1_105_c.jpeg",
+        text: "Voici le groupe d'amis qu'on forme depuis la malaisie, biensur il y en a d'autres, mais nos soirées films nos moments à 5, cette fameuse télé cet appartement a roti canai et a naknak et au poulet qui pique de chez al rafi !! "
+      },
+      5: {
+        title: "5 comme le nombre de personnes dans ta famille (6 avec Romain hihihi)",
+        image: "images/A189A620-EE28-4D4F-99FC-D7688D909FDB.JPG",
+        text: "Nous voici tous les deux, tu m'as présenté ta famille et tu m'as déguisé en hippie ! Cependant tu t'es gardé la belle robe pour toi ! Je t'aime fort mon amour"
+      },
+      6: {
+        title: "Jour 6 pour mes 6 morceau de chocolat fondu",
+        image: "images/P1100167.JPG",
+        text: "Bon faut quand m^me bien que t'es le dos d'un beau garçon dans tes cadeaux sinon ça ne sert a rien, j'espere qu'il va se faire encore prendre en petite cuillere une nuit! A ces belles vacances et ce beau ponton (je panique je sais pas coment ça s'écrit) "
+      },
+      7: {
+        title: "Pour un jour 7 Comme la fin de semaine un dimanche a la pisicne",
+        image: "images/A203113D-BB50-4A12-A157-63878A5BC5F6.JPG",
+        text: "Donc nous voilà amoureux et a l'hotel, notre premier sur une longue liste qui va s'étendre! là c'était du haut de gamme avec pleins de trucs gratuits a volonté dans ce pays chaud, mais on a eu peur pour ton bikini car bon c'est pas les coutumes de la maison! Tu vas commencer a préparer to,n sac pour l'Argentin et le Brésil, pense a la creme solaire et aux maillots de bains ;) "
+      },
+      8: {
+        title: "8 pour 8.6 cul sec devant le Louvres",
+        image: "images/E2725C22-8323-40E5-A448-1E3BAE3E7E63_4_5005_c.jpeg",
+        text: "Nos vacances chez notre Pote Ami que dire LE LEANDRE, en tout cas t'as l'air de te régaler tu te souviens a quoi il était le sandwich ?? moi j'avais surement du mettre des chips dedans <3"
+      },
+      9: {
+        title: "9 ans et toute tes dents ",
+        image: "images/5487F0C4-3F9F-4C11-91C5-50CD03A190A0_1_105_c.jpeg",
+        text: "Bon oui tu n'as pas 9 ans sur la photo rien n'a voir avec le neuf mais bon t'as tellement l'air de te régaler qu'on y retrouve un lien non ?? en tout cas pense a bien macher !!"
+      },
+      10: {
+        title: "C'était UN 10",
+        image: "images/E9B49206-FA76-48E5-BE76-1BB5095745E6_1_105_c.jpeg",
+        text: "ET oui on a creuse un trou le 10 octobre, tu t'es faites piquer le 10 octobre, tu n'as pas pris le même bus que moi vilaine, le 1à octobre et on a asperger le MAITRE DU TEMPS UN 10 OCTOBREEEEEEE <333"
+      },
+      11: {
+        title: "9/11",
+        image: "images/nyc.jpeg",
+        text: "Oui bon désolé mais le 11 ça m'a fais penser au 11 septembre MAIS, surtout à New York !! Donc cette case est avec un grand plaisir une invitattion a notre futur voyage à New York, où les immeubles seront dréssé pour nous regarder nous aimer et nous iront sur le pont de Brooklin nous faire un gros bisous plutot que de se prendre un bateau mexicain HIHIHHI JE T'AIME FORT <3 "
+      },
+      12: {
+        title: "12 jours ensemble",
+        image: "images/C2F66647-3C9B-4F76-87F9-C6189E3EA156.JPG",
+        text: "Voici une belle photo de  ous en corse on était beau et bronzé, la chance !! les vacances me manquent mais c'est l'ouverture des stations de ski aujourd'hui!! Hate de skier avec toi commence a t'entrainer si tu veux pas prendre ta branlée "
+      },
+      13: {
+        title: "VENDREDI 13",
+        image: "images/P1090385.JPG",
+        text: "Et non malgré la faible qualité de l'image ce n'est pas un film d'horreur mais bien mon apartemet, toi, mon beau canapé mais attend non je suis ton coussin enfin bon voila voili voilou"
+      },
+      14: {
+        title: "14 la blague du jour: ",
+        image: "images/P1070679.JPG",
+        text: "Quel est l'animal le plus heureux ? Coucou bah c'est la fête c'est la blague je crois que je vais continuer ce petit truc avec la réponse le lendemain. Ca va ? envoie un poetit message si t'as la réponse! "
+      },
+      15: {
+        title: "Jour 15 la réponse !",
+        image: "images/A67B5694-57BC-45F8-B96B-E7CD544D811B_1_105_c.jpeg",
+        text: "L'Hibou car sa femme est Chouette !! et oui ça vole pas haut mais ça plonge profond car ma Éle a moi elle est trop forte en plongée elle sait même faire du bycicle sous l'eau non mais vous imagez vous les vilains moldu !!"
+      },
+      16: {
+        title: "16 Boites 16 Barquettes ! T'imagines ?",
+        image: "images/1E2B7F89-18AA-4E09-B049-2C6806C4476E.JPG",
+        text: "Bon bah je sais quoi t'offir en plus de la ratatouille cassegrain... Un cerf volant !"
+      },
+      17: {
+        title: "Jour JOUR 17 A L'ABORDAGEEEEE",
+        image: "images/pirate.jpeg",
+        text: "Aller ma chérie, on y va on va conquérir les mers et tous leur prendre a ces vilains de chez les autres bateaux MWAHAHAHAHA la piraterie ne fait que commencer !!!"
+      },
+      18: {
+        title: "18h fini le boulot",
+        image: "images/9B76FE2B-4FE8-48A7-ADB7-6B24DD928E6B.JPG",
+        text: "Bon je sais plus si t'as valise est faites où si tu pars demain mais en tout cas pense bien a te laver les dents avant de te coucher et de pas ramener de la beugh a l'aéroport ça serait con de te faire chopper a l'allée si tu peux pas ramener la cocaïne au retour"
+      },
+      19: {
+        title: "19 voila 19 quoi",
+        image: "images/P1090921.JPG",
+        text: "Bon normalment t'as pris un transport pour l'Argentine, pas le petit train mais le grand AVION DE PABLO OUHHH, Bonne vacances ma chérie Profite bien et reviens avec le maillot du brasil et celui de Messi (Trouves l'erreur)"
+      },
+      20: {
+        title: "LE 20EME JOUR DU MOIS, dans un mois nos un an !!!",
+        image: "images/photo_converted.jpg",
+        text: "Je t'aime, ce jour c'est notre mise en couple officiel, mais ce n'est en rien le début de notre histoire, je tai aimé dans ce trou, quand j'étais jaloux en pesnant que tu aimais Tifenn, depuis dreamcity j'usqu'a Paris et Champagny et partout ou le monde va ! JE T'AIME ELE <3"
+      },
+      21: {
+        title: "T'as 21 ans bah lui 3 chromosomes 21",
+        image: "images/trismie.JPEG",
+        text: "Malgré que tu sois magnifiquement bien fini, t'as tout la où il faut BB, un genoux au nombril, un talon bien potelé et ferme, et surtout MASHAALLAH des petits coude j'en dirais pas plus... EN tout cas t'es pas trisomique mais magnifique "
+      },
+      22: {
+        title: "22 oui c'est moi",
+        image: "images/cam_petit.jpeg",
+        text: "Coucou bah oui pour ma date d'anniversaire j'étais bien obligé de mettre une photo de moi où je suis trop BG #BCBG et ouais bam j'ai trop le style cheveux blond !!! C'est a arcachnon enfin a pyla sur mer on ira dans ce bon restaurant <3 <3 <3"
+      },
+      23: {
+        title: "1, 2 et 23",
+        image: "images/91CFABB1-871F-4866-8AAE-822B35EE67B2.JPG",
+        text: "Je t'aime t'es mon rayon de soleil, sans toi je ne serais pas là maintenant, tu m'apportes énormément tous les joiurs, t'es la fille la plus extraordinaire que je conaisse! Merci Élé je t'aime je suis amoureux de toi, BREF je suis LOVE D'UN VOYOU"
+      },
+      24: {
+        title: "Bientôt NOËLLLLLL JOYEUX 24 MA CHÉRIE",
+        image: "images/EB734EA4-49C2-42F3-AA19-4269B4BFB091.JPG",
+        text: "QUELLE EST LA DIFFERENCE ENTRE CAMILLE ET UN SAPIN ??? LE SAPIN C'EST UN CONNIFERE ET CAMILLE C4EST UN CO ET ON PEUT RIEN Y FAIREEEEEE (petite photo bonus si tu demandes gentiment pour le 25 au matin <3) PS: Mon cadeau c'est d'avoir retrouvé notre bele que dije votre belle TEQUILA (non j'deconne t'as un truc qui t'attends sous le sapin)"
+      }
+    };
+
+    // 🧩 2. PARAMÈTRES DU CALENDRIER
+    // Décembre = 11 (JS : 0 = janvier, 11 = décembre)
+    const START_DAY = 1;   // 1er décembre
+    const END_DAY = 24;    // 24 décembre
+    const MONTH = 11;      // Décembre
+
+    const today = new Date();
+    const year = today.getFullYear();
+
+    // Calcul du "numéro de jour" autorisé
+    let currentDay = 0;
+    if (today.getMonth() === MONTH) {
+      currentDay = today.getDate();
+      if (currentDay < START_DAY) {
+        currentDay = 0; // avant le 1er décembre -> rien d'ouvert
+      } else if (currentDay > END_DAY) {
+        currentDay = END_DAY; // après le 24 -> tout est ouvert
+      }
+    } else if (today.getMonth() > MONTH) {
+      currentDay = END_DAY; // après décembre -> tout ouvert
+    } else {
+      currentDay = 0; // avant décembre
+    }
+
+    // 🧩 3. GÉNÉRATION DES CASES
+    const calendarEl = document.getElementById("calendar");
+
+    function openDay(day) {
+      const data = contentByDay[day] || {
+        title: "Jour " + day,
+        image: "",
+        text: "Pas de contenu défini encore."
+      };
+
+      const modalBackdrop = document.getElementById("modal-backdrop");
+      const modalTitle = document.getElementById("modal-title");
+      const modalImage = document.getElementById("modal-image");
+      const modalText = document.getElementById("modal-text");
+
+      modalTitle.textContent = data.title || `Jour ${day}`;
+      modalText.textContent = data.text || "";
+      if (data.image) {
+        modalImage.style.display = "block";
+        modalImage.src = data.image;
+        modalImage.alt = data.title || `Jour ${day}`;
+      } else {
+        modalImage.style.display = "none";
+      }
+
+      modalBackdrop.classList.add("active");
+    }
+
+    function buildCalendar() {
+      for (let day = START_DAY; day <= END_DAY; day++) {
+        const btn = document.createElement("button");
+        btn.classList.add("day");
+
+        const numberSpan = document.createElement("span");
+        numberSpan.classList.add("number");
+        numberSpan.textContent = day;
+        btn.appendChild(numberSpan);
+
+        if (currentDay === 0 || day > currentDay) {
+          // Case future → verrouillée
+          btn.classList.add("locked");
+        } else {
+          // Case passée ou aujourd'hui
+          btn.classList.add(day === currentDay ? "unlocked" : "past");
+
+          if (day === currentDay) {
+            const label = document.createElement("div");
+            label.classList.add("today-label");
+            label.textContent = "Aujourd'hui";
+            btn.appendChild(label);
+          }
+
+          btn.addEventListener("click", () => {
+            openDay(day);
+            playBell();
+          });
+        }
+
+        calendarEl.appendChild(btn);
+      }
+    }
+
+    buildCalendar();
+
+    // 🧩 4. GESTION DU MODAL
+    const modalBackdrop = document.getElementById("modal-backdrop");
+    const closeBtn = document.querySelector(".modal-close");
+
+    closeBtn.addEventListener("click", () => {
+      modalBackdrop.classList.remove("active");
+    });
+
+    modalBackdrop.addEventListener("click", (e) => {
+      if (e.target === modalBackdrop) {
+        modalBackdrop.classList.remove("active");
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        modalBackdrop.classList.remove("active");
+      }
+    });
+
+    // ❄️ Neige dynamique
+    const snowSymbols = ["❄", "✻", "✼", "❅", "❆"];
+
+    function createSnowflake() {
+      const snowflake = document.createElement("div");
+      snowflake.classList.add("snowflake");
+      snowflake.textContent = snowSymbols[Math.floor(Math.random() * snowSymbols.length)];
+
+      const startLeft = Math.random() * 100; // en vw
+      const duration = 8 + Math.random() * 10; // 8 à 18 s
+      const delay = Math.random() * 10;
+      const size = 0.6 + Math.random() * 1.1; // 0.6 à 1.7 rem
+
+      snowflake.style.left = startLeft + "vw";
+      snowflake.style.animationDuration = duration + "s";
+      snowflake.style.animationDelay = delay + "s";
+      snowflake.style.fontSize = size + "rem";
+
+      document.body.appendChild(snowflake);
+
+      setTimeout(() => {
+        snowflake.remove();
+      }, (duration + delay) * 1000);
+    }
+
+    // Crée un certain nombre de flocons au démarrage
+    for (let i = 0; i < 60; i++) {
+      setTimeout(createSnowflake, Math.random() * 8000);
+    }
+    // Puis continue régulièrement
+    setInterval(createSnowflake, 4000);
+
+    // 🔔 Son de cloche au clic sur une case
+    const bellSound = document.getElementById("bell-sound");
+    function playBell() {
+      if (!bellSound) return;
+      bellSound.currentTime = 0;
+      bellSound.play().catch(() => {
+        // Certains navigateurs bloquent au premier clic tant qu'il
+        // n'y a pas d'interaction, on ignore l'erreur.
+      });
+    }
+  </script>
+</body>
+</html>
