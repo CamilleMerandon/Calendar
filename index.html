@@ -606,11 +606,11 @@
     }
 
     // Crée un certain nombre de flocons au démarrage
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 100; i++) {
       setTimeout(createSnowflake, Math.random() * 8000);
     }
     // Puis continue régulièrement
-    setInterval(createSnowflake, 4000);
+    setInterval(createSnowflake, 1200);
 
     // 🔔 Son de cloche au clic sur une case
     const bellSound = document.getElementById("bell-sound");
